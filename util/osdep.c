@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 #include "qemu/osdep.h"
+#include "qemu/ohos.h"
 #include "qapi/error.h"
 #include "qemu/cutils.h"
 #include "qemu/sockets.h"
@@ -82,7 +83,14 @@ static int qemu_mprotect__osdep(void *addr, size_t size, int prot)
     }
     return 0;
 #else
-    if (mprotect(addr, size, prot)) {
+    if (prot & PROT_EXEC) {
+        qemu_ohos_jit_write_protect(false);
+    }
+    int ret = mprotect(addr, size, prot);
+    if (prot & PROT_EXEC) {
+        qemu_ohos_jit_write_protect(true);
+    }
+    if (ret) {
         error_report("%s: mprotect failed: %s", __func__, strerror(errno));
         return -1;
     }

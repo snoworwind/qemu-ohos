@@ -41,7 +41,11 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+#ifdef CONFIG_OHOS_EMBED
+static int qemu_default_main(void *opaque)
+#else
 static void *qemu_default_main(void *opaque)
+#endif
 {
     int status;
 
@@ -52,7 +56,11 @@ static void *qemu_default_main(void *opaque)
     bql_unlock();
     replay_mutex_unlock();
 
+#ifdef CONFIG_OHOS_EMBED
+    return status;
+#else
     exit(status);
+#endif
 }
 
 int (*qemu_main)(void);
@@ -66,7 +74,12 @@ static int os_darwin_cfrunloop_main(void)
 int (*qemu_main)(void) = os_darwin_cfrunloop_main;
 #endif
 
+#ifdef CONFIG_OHOS_EMBED
+int qemu_system_entry(int argc, char **argv);
+int qemu_system_entry(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     qemu_init(argc, argv);
 
@@ -84,6 +97,9 @@ int main(int argc, char **argv)
     bql_unlock();
     replay_mutex_unlock();
 
+#ifdef CONFIG_OHOS_EMBED
+    return qemu_default_main(NULL);
+#else
     if (qemu_main) {
         QemuThread main_loop_thread;
         qemu_thread_create(&main_loop_thread, "qemu_main",
@@ -93,4 +109,5 @@ int main(int argc, char **argv)
         qemu_default_main(NULL);
         g_assert_not_reached();
     }
+#endif
 }

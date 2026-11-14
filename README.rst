@@ -2,6 +2,10 @@
 QEMU README
 ===========
 
+This fork adapts official QEMU stable releases for HarmonyOS/OpenHarmony.
+See `OHOS build instructions and embedding limitations <README.ohos.md>`_
+for the opt-in shared-library build and the origin of the platform patches.
+
 QEMU is a generic and open source machine & userspace emulator and
 virtualizer.
 

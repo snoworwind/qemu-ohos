@@ -2,6 +2,9 @@
 # on the configure script command line.  If you add more, list them in
 # scripts/meson-buildoptions.py's SKIP_OPTIONS constant too.
 
+option('ohos_embed', type: 'boolean', value: false,
+       description: 'Build embeddable system and image shared libraries for OHOS')
+
 option('qemu_suffix', type : 'string', value: 'qemu',
        description: 'Suffix for QEMU data/modules/config directories (can be empty)')
 option('docdir', type : 'string', value : 'share/doc',

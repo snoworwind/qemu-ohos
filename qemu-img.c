@@ -5953,7 +5953,12 @@ static void format_print(void *opaque, const char *name)
     *np += printf(" %s", name);
 }
 
+#ifdef CONFIG_OHOS_EMBED
+int qemu_img_entry(int argc, char **argv);
+int qemu_img_entry(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     const img_cmd_t *cmd;
     const char *cmdname;

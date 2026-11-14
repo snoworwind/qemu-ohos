@@ -1,6 +1,6 @@
 project('qemu', ['c'], meson_version: '>=1.5.0',
         default_options: ['warning_level=1', 'c_std=gnu11', 'cpp_std=gnu++23', 'b_colorout=auto',
-                          'b_staticpic=false', 'stdsplit=false', 'optimization=2', 'b_pie=true'] +
+                          'b_staticpic=true', 'stdsplit=false', 'optimization=2', 'b_pie=true'] +
 
                           # build.rust_std breaks with older meson, but Rust does not
                           # support old meson anyway
@@ -28,6 +28,13 @@ ss = import('sourceset')
 fs = import('fs')
 
 host_os = host_machine.system()
+ohos_embed = get_option('ohos_embed')
+if ohos_embed
+  if host_os != 'linux'
+    error('ohos_embed requires a Linux-compatible OHOS toolchain')
+  endif
+  add_project_arguments('-DCONFIG_OHOS_EMBED', language: ['c'])
+endif
 config_host = keyval.load(meson.current_build_dir() / 'config-host.mak')
 
 # Temporary directory used for files created while
@@ -1057,14 +1064,14 @@ have_xen_pci_passthrough = get_option('xen_pci_passthrough') \
 # below can also be removed.
 glib_req_ver = '>=2.66.0'
 glib_pc = dependency('glib-2.0', version: glib_req_ver, required: true,
-                    method: 'pkg-config')
+                    method: 'pkg-config', static: ohos_embed)
 glib_cflags = []
 if enable_modules
   gmodule = dependency('gmodule-export-2.0', version: glib_req_ver, required: true,
-                       method: 'pkg-config')
+                       method: 'pkg-config', static: ohos_embed)
 elif get_option('plugins')
   gmodule = dependency('gmodule-no-export-2.0', version: glib_req_ver, required: true,
-                       method: 'pkg-config')
+                       method: 'pkg-config', static: ohos_embed)
 else
   gmodule = not_found
 endif
@@ -4447,14 +4454,16 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
-    emulator = executable(exe_name, exe['sources'],
+    emulator_kwargs = ohos_embed and target.endswith('-softmmu') ? {} : {'win_subsystem': exe['win_subsystem']}
+    emulator = build_target(exe_name, exe['sources'],
+               target_type: ohos_embed and target.endswith('-softmmu') ? 'shared_library' : 'executable',
                install: true,
                c_args: c_args,
                dependencies: arch_deps + exe['dependencies'],
                objects: lib.extract_all_objects(recursive: true),
                link_depends: [block_syms, qemu_syms],
                link_args: link_args,
-               win_subsystem: exe['win_subsystem'])
+               kwargs: emulator_kwargs)
 
     if host_os == 'darwin'
       icon = 'pc-bios/qemu.rsrc'
@@ -4514,7 +4523,8 @@ endif
 
 if have_tools
   tools_link_args = enable_modules ? ['@block.syms'] : []
-  qemu_img = executable('qemu-img', [files('qemu-img.c'), hxdep],
+  qemu_img = build_target('qemu-img', [files('qemu-img.c'), hxdep],
+             target_type: ohos_embed ? 'shared_library' : 'executable',
              link_args: tools_link_args, link_depends: block_syms,
              dependencies: [authz, block, crypto, io, qom, qemuutil], install: true)
   qemu_io = executable('qemu-io', files('qemu-io.c'),
